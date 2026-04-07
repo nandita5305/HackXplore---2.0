@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import InternshipCard from "./InternshipCard";
 
-/* ── Section-specific CSS ────────────────────────────────────── */
 const SECTION_CSS = `
   .intern-section {
     padding: 6rem 0;
@@ -49,91 +48,100 @@ const SECTION_CSS = `
   }
 `;
 
-/* ── Sample data ─────────────────────────────────────────────── */
-const INTERNSHIPS = [
-  {
-    role: "Machine Learning Engineer Intern",
-    company: "Google DeepMind",
-    companyLogo: "🧠",
-    stipend: "$8,500/mo",
-    duration: "3 Months",
-    location: "London, UK",
-    mode: "hybrid",
-    skills: ["Python", "TensorFlow", "Research", "PyTorch"],
-    domain: "AI/ML Research",
-    openings: 8,
-    deadline: "Jul 31, 2025",
-    startDate: "Sep 1, 2025",
-    perks: ["PPO", "Mentorship", "Certificate"],
-    verified: true,
-    hot: true,
-  },
-  {
-    role: "Product Design Intern",
-    company: "Figma",
-    companyLogo: "🎨",
-    stipend: "$6,200/mo",
-    duration: "4 Months",
-    location: "San Francisco, CA",
-    mode: "hybrid",
-    skills: ["Figma", "Design Systems", "User Research"],
-    domain: "Product Design",
-    openings: 5,
-    deadline: "Aug 10, 2025",
-    startDate: "Sep 15, 2025",
-    perks: ["PPO", "Certificate", "Letter of Rec"],
-    verified: true,
-    hot: false,
-  },
-  {
-    role: "Full Stack Developer Intern",
-    company: "Razorpay",
-    companyLogo: "💳",
-    stipend: "₹60,000/mo",
-    duration: "6 Months",
-    location: "Bengaluru, India",
-    mode: "onsite",
-    skills: ["React", "Node.js", "PostgreSQL", "Redis"],
-    domain: "Software Engineering",
-    openings: 12,
-    deadline: "Jul 20, 2025",
-    startDate: "Aug 1, 2025",
-    perks: ["PPO", "Stipend", "Certificate"],
-    verified: true,
-    hot: false,
-  },
-  {
-    role: "Data Science Intern",
-    company: "Zepto",
-    companyLogo: "⚡",
-    stipend: "₹45,000/mo",
-    duration: "3 Months",
-    location: "Remote",
-    mode: "remote",
-    skills: ["Python", "SQL", "Tableau", "scikit-learn"],
-    domain: "Analytics & Data",
-    openings: 4,
-    deadline: "Jul 15, 2025",
-    startDate: "Aug 15, 2025",
-    perks: ["Certificate", "Mentorship"],
-    verified: false,
-    hot: true,
-  },
-];
+const FILTERS = ["All Roles", "Remote", "Paid Only", "Internshala"];
 
-const FILTERS = ["All Roles", "Remote", "Research", "Paid Only", "PPO"];
+const inferMode = (location = "") => {
+  const loc = String(location).toLowerCase();
+  if (loc.includes("work from home") || loc.includes("remote")) return "remote";
+  if (loc.includes("hybrid")) return "hybrid";
+  return "onsite";
+};
 
-/* ── Component ───────────────────────────────────────────────── */
-export default function InternshipsSection() {
+const parseMonthlyDuration = (stipend = "") => {
+  const s = String(stipend).toLowerCase();
+  if (s.includes("/week")) return "1-2 Months";
+  if (s.includes("lump sum")) return "Flexible";
+  return "3-6 Months";
+};
+
+const makeSkills = (title = "") => {
+  const parts = String(title)
+    .replace(/[()\-]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 4);
+  return parts.length ? parts : ["Communication"];
+};
+
+export default function InternshipsSection({ maxItems = 10, showViewMore = true }) {
   const [activeFilter, setActiveFilter] = useState("All Roles");
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
-  const filtered = INTERNSHIPS.filter((i) => {
+  useEffect(() => {
+    let alive = true;
+    const jsonUrl = `${import.meta.env.BASE_URL}internship.json`;
+
+    fetch(jsonUrl)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Failed to load ${jsonUrl} (${r.status})`))))
+      .then((rows) => {
+        if (!alive || !Array.isArray(rows)) return;
+
+        const mapped = rows.map((row, idx) => {
+          const mode = inferMode(row.location);
+          return {
+            id: row.link || `${row.title}-${idx}`,
+            role: row.title || "Internship",
+            company: row.company || "Unknown Company",
+            companyLogo: (row.company || "?").trim().charAt(0).toUpperCase() || "?",
+            stipend: row.stipend || "Unpaid",
+            duration: parseMonthlyDuration(row.stipend),
+            mode,
+            skills: makeSkills(row.title),
+            domain: row.source ? String(row.source).toUpperCase() : "INTERNSHIP",
+            openings: 1,
+            deadline: "Rolling",
+            startDate: "Immediate",
+            perks: ["Stipend", "Certificate"],
+            verified: true,
+            hot: idx < 8,
+            applyUrl: row.link,
+          };
+        });
+
+        setInternships(mapped);
+        setLoadError("");
+      })
+      .catch((err) => {
+        if (alive) {
+          setInternships([]);
+          setLoadError(err?.message || "Unable to load internship data");
+        }
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const filtered = useMemo(() => internships.filter((i) => {
     if (activeFilter === "All Roles") return true;
-    if (activeFilter === "Remote")    return i.mode === "remote";
-    if (activeFilter === "PPO")       return i.perks.includes("PPO");
-    if (activeFilter === "Paid Only") return true; // all are paid
+    if (activeFilter === "Remote") return i.mode === "remote";
+    if (activeFilter === "Paid Only") return !String(i.stipend).toLowerCase().includes("unpaid");
+    if (activeFilter === "Internshala") return i.domain === "INTERNSHALA";
     return true;
-  });
+  }), [activeFilter, internships]);
+
+  const visibleItems = useMemo(() => (
+    showAll ? filtered : filtered.slice(0, maxItems)
+  ), [filtered, showAll, maxItems]);
+
+  const canViewMore = showViewMore && !showAll && filtered.length > maxItems;
 
   return (
     <>
@@ -141,14 +149,21 @@ export default function InternshipsSection() {
 
       <section id="internships" className="intern-section">
         <div className="intern-section-inner">
-          {/* Label */}
           <div className="sec-label">Phase_02 // Internships</div>
 
-          {/* Header */}
           <div className="intern-header">
             <div>
-              <h2 className="intern-h2">Real work. Real impact.</h2>
-              <p className="intern-sub">Curated internship opportunities at top startups, MNCs, and research labs. Stipend-first. No unpaid work.</p>
+              {showAll && (
+                <button className="btn-ghost" style={{ marginBottom: ".85rem" }} onClick={() => setShowAll(false)}>
+                  Back to Home
+                </button>
+              )}
+              <h2 className="intern-h2">{showAll ? "All Internships" : "Real work. Real impact."}</h2>
+              <p className="intern-sub">
+                {showAll
+                  ? "Browse the full internships dataset from your scraper."
+                  : "Curated internship opportunities from your latest JSON data."}
+              </p>
             </div>
             <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
               {FILTERS.map((f) => (
@@ -163,32 +178,43 @@ export default function InternshipsSection() {
             </div>
           </div>
 
-          {/* Season banner */}
           <div className="intern-banner">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <span style={{ fontSize: "1.5rem" }}>🔥</span>
+              <span style={{ fontSize: "1.5rem" }}>Hiring</span>
               <div>
-                <p className="intern-banner-text">Summer 2025 Internship Season is LIVE</p>
-                <p className="intern-banner-sub">240+ companies actively hiring interns right now</p>
+                <p className="intern-banner-text">Internship feed is live</p>
+                <p className="intern-banner-sub">{filtered.length} opportunities available</p>
               </div>
             </div>
-            <button className="intern-banner-btn">Browse All →</button>
+            {canViewMore && (
+              <button className="intern-banner-btn" onClick={() => setShowAll(true)}>Browse All {'->'}</button>
+            )}
           </div>
 
-          {/* Cards */}
           <div className="intern-grid">
-            {filtered.map((item, i) => (
+            {loading && <div className="mono" style={{ color: "var(--muted)" }}>Loading internships...</div>}
+
+            {!loading && loadError && <div className="mono" style={{ color: "var(--red)" }}>{loadError}</div>}
+
+            {!loading && !loadError && visibleItems.length === 0 && (
+              <div className="mono" style={{ color: "var(--muted)" }}>No internships found for this filter.</div>
+            )}
+
+            {!loading && !loadError && visibleItems.map((item) => (
               <InternshipCard
-                key={i}
+                key={item.id}
                 {...item}
-                onApply={() => alert(`Applying for ${item.role} at ${item.company}`)}
+                onApply={() => window.open(item.applyUrl, "_blank", "noopener,noreferrer")}
               />
             ))}
           </div>
 
-          {/* Load more */}
           <div className="intern-load-more">
-            <button className="btn-ghost">View All 840+ Internships →</button>
+            {canViewMore ? (
+              <button className="btn-ghost" onClick={() => setShowAll(true)}>View More Internships {'->'}</button>
+            ) : (
+              <button className="btn-ghost">Loaded from JSON dataset</button>
+            )}
           </div>
         </div>
       </section>

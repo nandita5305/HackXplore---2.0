@@ -8,6 +8,12 @@ const HACKATHON_CARD_CSS = `
     background: var(--bg); border: 1px solid var(--border);
     font-size: 1.25rem;
     clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+    overflow: hidden;
+  }
+  .hc-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .hc-title { color: var(--text); font-weight: 600; font-size: .9375rem; line-height: 1.2; letter-spacing: -.02em; }
   .hc-org   { font-family: 'Geist Mono', monospace; font-size: .5625rem; color: var(--dim); margin-top: .2rem; }
@@ -61,6 +67,7 @@ export default function HackathonCard({
 
   const fillPct = capacity > 0 ? Math.min((registered / capacity) * 100, 100) : null;
   const modeConf = MODE[mode] || MODE.online;
+  const logoIsImage = typeof logo === "string" && /^https?:\/\//i.test(logo);
 
   return (
     <>
@@ -86,7 +93,9 @@ export default function HackathonCard({
           {/* Header row */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: ".875rem" }}>
-              <div className="hc-logo">{logo}</div>
+              <div className="hc-logo">
+                {logoIsImage ? <img src={logo} alt={title} /> : logo}
+              </div>
               <div>
                 <div className="hc-title">{title}</div>
                 <div className="hc-org">by {organizer}</div>
