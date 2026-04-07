@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ScholarshipCard from "./ScholarshipCard";
 
-/* ── Section-specific CSS ────────────────────────────────────── */
+/* Section-specific CSS */
 const SECTION_CSS = `
   .sch-section {
     padding: 6rem 0;
@@ -38,114 +38,109 @@ const SECTION_CSS = `
   }
 `;
 
-/* ── Sample data ─────────────────────────────────────────────── */
-const SCHOLARSHIPS = [
-  {
-    name: "Reliance Foundation UG Scholarship",
-    provider: "Reliance Foundation",
-    providerLogo: "🏛️",
-    amount: "₹4,00,000",
-    amountNote: "one-time",
-    category: "Merit",
-    eligibility: [
-      "Indian Citizen",
-      "CGPA ≥ 8.0",
-      "Family Income < ₹15 LPA",
-      "Year 1 or 2 UG Student",
-    ],
-    deadline: "Oct 5, 2025",
-    renewability: "One-time",
-    level: "UG",
-    country: "India",
-    fields: ["Engineering", "Science", "Humanities", "Commerce"],
-    totalAwarded: "₹40Cr+",
-    applicants: "50,000+",
-    acceptance: "1.2%",
-    featured: true,
-    urgent: false,
-  },
-  {
-    name: "Microsoft Research PhD Fellowship",
-    provider: "Microsoft Research",
-    providerLogo: "🪟",
-    amount: "$42,000",
-    amountNote: "per year",
-    category: "Research",
-    eligibility: [
-      "PhD Candidate (Year 1–3)",
-      "US/Canada/Mexico University",
-      "CS, EE or Related Field",
-    ],
-    deadline: "Sep 30, 2025",
-    renewability: "Annual",
-    level: "PhD",
-    country: "USA / Canada",
-    fields: ["Computer Science", "Electrical Engineering", "HCI"],
-    totalAwarded: "$12M+",
-    applicants: "2,500+",
-    acceptance: "3%",
-    featured: false,
-    urgent: false,
-  },
-  {
-    name: "Aditya Birla Scholarship",
-    provider: "Aditya Birla Group",
-    providerLogo: "🌟",
-    amount: "₹1,80,000",
-    amountNote: "per year",
-    category: "Merit",
-    eligibility: [
-      "IIT / IIM / BITS / NLSIU Student",
-      "Top 20 in Merit List",
-      "Indian National",
-    ],
-    deadline: "Aug 25, 2025",
-    renewability: "Annual",
-    level: "UG",
-    country: "India",
-    fields: ["Engineering", "Law", "Management", "Design"],
-    totalAwarded: "₹20Cr+",
-    applicants: "18,000+",
-    acceptance: "0.5%",
-    featured: false,
-    urgent: true,
-  },
-  {
-    name: "Chevening Scholarship",
-    provider: "UK Government / FCDO",
-    providerLogo: "🇬🇧",
-    amount: "Full Tuition",
-    amountNote: "+ Living Stipend",
-    category: "Merit",
-    eligibility: [
-      "Work Experience 2+ Years",
-      "Indian Citizen",
-      "Return to India after degree",
-      "IELTS 6.5+",
-    ],
-    deadline: "Nov 5, 2025",
-    renewability: "One-time",
-    level: "PG",
-    country: "United Kingdom",
-    fields: ["All Disciplines"],
-    totalAwarded: "$200M+",
-    applicants: "65,000+",
-    acceptance: "2.1%",
-    featured: false,
-    urgent: false,
-  },
-];
-
 const FILTERS = ["All", "Merit", "Need-Based", "Research", "Diversity"];
 
-/* ── Component ───────────────────────────────────────────────── */
-export default function ScholarshipsSection() {
-  const [activeFilter, setActiveFilter] = useState("All");
+const inferCategory = (name = "") => {
+  const text = String(name).toLowerCase();
+  if (text.includes("research") || text.includes("fellowship")) return "Research";
+  if (text.includes("girl") || text.includes("women") || text.includes("obc") || text.includes("sc") || text.includes("st")) {
+    return "Diversity";
+  }
+  if (text.includes("income") || text.includes("financial")) return "Need-Based";
+  return "Merit";
+};
 
-  const filtered = SCHOLARSHIPS.filter((s) => {
-    if (activeFilter === "All") return true;
-    return s.category === activeFilter;
-  });
+const inferLevel = (name = "") => {
+  const text = String(name).toLowerCase();
+  if (text.includes("phd")) return "PhD";
+  if (text.includes("pg") || text.includes("postgraduate")) return "PG";
+  if (text.includes("ug") || text.includes("undergraduate") || text.includes("post matric")) return "UG";
+  return "All";
+};
+
+const toWords = (name = "") =>
+  String(name)
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3)
+    .slice(0, 3);
+
+export default function ScholarshipsSection({ maxItems = 10, showViewMore = true }) {
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [scholarships, setScholarships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const jsonUrl = `${import.meta.env.BASE_URL}scholarships.json`;
+
+    fetch(jsonUrl)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Failed to load ${jsonUrl} (${r.status})`))))
+      .then((rows) => {
+        if (!alive || !Array.isArray(rows)) return;
+
+        const mapped = rows.map((row, idx) => {
+          const name = row.name || "Untitled Scholarship";
+          const provider = row.provider || String(row.source || "Unknown Source").toUpperCase();
+          const level = inferLevel(name);
+          const category = inferCategory(name);
+          const fields = toWords(name);
+          const eligibility = String(row.eligibility || "")
+            .split(/[;,|]/)
+            .map((v) => v.trim())
+            .filter(Boolean);
+
+          return {
+            id: row.url || `${name}-${idx}`,
+            name,
+            provider,
+            providerLogo: provider.charAt(0).toUpperCase() || "S",
+            amount: row.stipend || "Check Details",
+            amountNote: row.duration || "As per scholarship terms",
+            category,
+            eligibility: eligibility.length ? eligibility : ["See official link for complete eligibility criteria"],
+            deadline: row.deadline || row.status || "Check official page",
+            renewability: row.duration || "Varies",
+            level,
+            country: row.location || "India",
+            fields: fields.length ? fields : ["General"],
+            totalAwarded: String(row.source || "source").toUpperCase(),
+            applicants: "N/A",
+            acceptance: "N/A",
+            featured: idx < 6,
+            urgent: /closing|last date|deadline/i.test(String(row.status || row.description || "")),
+            applyUrl: row.url,
+          };
+        });
+
+        setScholarships(mapped);
+        setLoadError("");
+      })
+      .catch((err) => {
+        if (alive) {
+          setScholarships([]);
+          setLoadError(err?.message || "Unable to load scholarships data");
+        }
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const filtered = useMemo(
+    () => scholarships.filter((s) => (activeFilter === "All" ? true : s.category === activeFilter)),
+    [activeFilter, scholarships]
+  );
+
+  const visibleItems = useMemo(() => (showAll ? filtered : filtered.slice(0, maxItems)), [filtered, maxItems, showAll]);
+
+  const canViewMore = showViewMore && !showAll && filtered.length > maxItems;
 
   return (
     <>
@@ -153,14 +148,21 @@ export default function ScholarshipsSection() {
 
       <section id="scholarships" className="sch-section">
         <div className="sch-section-inner">
-          {/* Label */}
           <div className="sec-label">Phase_03 // Scholarships</div>
 
-          {/* Header */}
           <div className="sch-header">
             <div>
-              <h2 className="sch-h2">Fund your education.</h2>
-              <p className="sch-sub">₹500Cr+ in scholarships listed. Filter by category, country, and study level to find your perfect match.</p>
+              {showAll && (
+                <button className="btn-ghost" style={{ marginBottom: ".85rem" }} onClick={() => setShowAll(false)}>
+                  Back to Home
+                </button>
+              )}
+              <h2 className="sch-h2">{showAll ? "All Scholarships" : "Fund your education."}</h2>
+              <p className="sch-sub">
+                {showAll
+                  ? "Browse the complete scholarship dataset from your scraper."
+                  : "Live scholarship cards generated from your scholarships JSON dataset."}
+              </p>
             </div>
             <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
               {FILTERS.map((f) => (
@@ -175,13 +177,12 @@ export default function ScholarshipsSection() {
             </div>
           </div>
 
-          {/* Stats 4-up */}
           <div className="sch-stats4">
             {[
-              { val: "1,200+", lbl: "Active Scholarships" },
-              { val: "₹500Cr+", lbl: "Total Funding" },
-              { val: "92",     lbl: "Countries" },
-              { val: "48h",    lbl: "Avg. Listing Update" },
+              { val: filtered.length.toLocaleString(), lbl: "Active Scholarships" },
+              { val: `${new Set(filtered.map((s) => s.provider)).size}`, lbl: "Providers" },
+              { val: `${new Set(filtered.map((s) => s.category)).size}`, lbl: "Categories" },
+              { val: `${filtered.filter((s) => s.urgent).length}`, lbl: "Closing Soon" },
             ].map(({ val, lbl }) => (
               <div key={lbl} className="stat-box">
                 <div className="stat-val">{val}</div>
@@ -190,17 +191,21 @@ export default function ScholarshipsSection() {
             ))}
           </div>
 
-          {/* Cards */}
           <div className="sch-grid">
-            {filtered.length > 0 ? (
-              filtered.map((s, i) => (
+            {loading && <div className="mono" style={{ color: "var(--muted)" }}>Loading scholarships...</div>}
+
+            {!loading && loadError && <div className="mono" style={{ color: "var(--red)" }}>{loadError}</div>}
+
+            {!loading && !loadError && visibleItems.length > 0 &&
+              visibleItems.map((s) => (
                 <ScholarshipCard
-                  key={i}
+                  key={s.id}
                   {...s}
-                  onApply={() => alert(`Applying for ${s.name}`)}
+                  onApply={() => window.open(s.applyUrl, "_blank", "noopener,noreferrer")}
                 />
-              ))
-            ) : (
+              ))}
+
+            {!loading && !loadError && visibleItems.length === 0 && (
               <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "4rem", color: "var(--dim)" }}>
                 <div className="mono" style={{ fontSize: ".75rem", marginBottom: ".5rem" }}>No scholarships found</div>
                 <button className="fpill" onClick={() => setActiveFilter("All")}>Clear filter</button>
@@ -208,9 +213,12 @@ export default function ScholarshipsSection() {
             )}
           </div>
 
-          {/* Load more */}
           <div className="sch-load-more">
-            <button className="btn-ghost">Browse All Scholarships →</button>
+            {canViewMore ? (
+              <button className="btn-ghost" onClick={() => setShowAll(true)}>View More Scholarships {'->'}</button>
+            ) : (
+              <button className="btn-ghost">Loaded from JSON dataset</button>
+            )}
           </div>
         </div>
       </section>
