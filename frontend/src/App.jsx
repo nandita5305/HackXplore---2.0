@@ -202,14 +202,6 @@ const GLOBAL_CSS = `
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* ── Dashboard grid bg ── */
-  .dash-grid {
-    background-image:
-      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-    background-size: 1.5rem 1.5rem;
-  }
-
   /* ── Hackathon card ── */
   .hack-card {
     background: linear-gradient(180deg, #161618, #0f0f11);
@@ -412,6 +404,84 @@ const GLOBAL_CSS = `
   .dot-green  { background: var(--green); }
   .dot-sky    { background: var(--sky); }
   .dot-amber  { background: var(--amber); }
+
+  /* ── Phase_00 Features Section ── */
+  .features-section {
+    padding: 6rem 0;
+    border-top: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-bg-orbs {
+    position: absolute;
+    top: -20%; left: 20%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(176,38,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .feat-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    position: relative;
+    z-index: 1;
+  }
+  .feat-header h2 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .feat-header p {
+    color: var(--muted);
+    max-width: 42rem;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    max-width: 84rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+  .feat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .feat-card:hover {
+    border-color: rgba(176, 38, 255, 0.4);
+    background: rgba(176, 38, 255, 0.03);
+    transform: translateY(-4px);
+  }
+  .feat-icon-wrap {
+    width: 3rem; height: 3rem;
+    background: rgba(176, 38, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: var(--accent);
+  }
+  .feat-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+  .feat-card p {
+    font-size: 0.9375rem;
+    color: var(--dim);
+    line-height: 1.6;
+  }
 `;
 
 /* ─── Scroll reveal hook ─────────────────────────────────────── */
@@ -428,195 +498,72 @@ function useReveal() {
   }, []);
 }
 
-/* ─── Live dashboard feed ────────────────────────────────────── */
-function DashFeed() {
-  const LOGS = [
-    "New hackathon listed: HackMIT 2025 — $50,000 prize",
-    "3 internships added at Google DeepMind",
-    "Chevening 2025 deadline updated → Nov 5",
-    "Alert: Smart India Hackathon is 70% full",
-    "New scholarship: PM YASASVI Fellowship",
-    "Razorpay hiring 12 SDE interns this cycle",
-    "Infosys Springboard scholarship applications open",
+/* ─── Features Section (Replaces Metrics Dashboard) ────────── */
+function FeaturesSection() {
+  const features = [
+    {
+      title: "Centralized Discovery",
+      desc: "Find hackathons and internships from multiple platforms in one place, saving you time and effort.",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      )
+    },
+    {
+      title: "AI Recommendations",
+      desc: "Get personalized suggestions based on your skills, interests, and past activities.",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="9" y1="18" x2="15" y2="18"></line>
+          <line x1="10" y1="22" x2="14" y2="22"></line>
+          <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
+        </svg>
+      )
+    },
+    {
+      title: "Team Formation",
+      desc: "Easily create or join teams for hackathons with our built-in team formation feature.",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      )
+    },
+    {
+      title: "Global Opportunities",
+      desc: "Access opportunities from around the world, whether remote or in-person.",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      )
+    }
   ];
-  const [feed, setFeed] = useState(LOGS.slice(0, 5).map((l, i) => ({ id: i, text: l })));
-
-  useEffect(() => {
-    let id = 0;
-    const interval = setInterval(() => {
-      const msg = LOGS[Math.floor(Math.random() * LOGS.length)];
-      const ts = new Date().toLocaleTimeString("en-US", { hour12: false });
-      setFeed((prev) => [{ id: ++id, text: `[${ts}] ${msg}` }, ...prev.slice(0, 4)]);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
-    <div style={{ flex: 1, padding: "1rem", display: "flex", flexDirection: "column", gap: ".75rem", overflow: "hidden" }}>
-      {feed.map((item, i) => (
-        <div
-          key={item.id}
-          className="mono"
-          style={{
-            fontSize: ".6875rem",
-            color: i === 0 ? "var(--accent)" : "var(--dim)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            transition: "color .4s",
-          }}
-        >
-          {item.text}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Metrics dashboard section ─────────────────────────────── */
-function MetricsSection() {
-  const bars = [30, 45, 25, 60, 55, 80, 40, 70, 65, 35, 95, 50];
-
-  return (
-    <section style={{ borderTop: "1px solid var(--border)", background: "var(--bg)", overflow: "hidden" }}>
-      <div
-        style={{
-          maxWidth: "84rem", margin: "0 auto", padding: "0 1.5rem",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          height: "4.5rem",
-        }}
-      >
-        <div className="sec-label" style={{ margin: 0 }}>Phase_00 // Live Intelligence Dashboard</div>
-        <span className="mono" style={{ fontSize: ".625rem", color: "var(--faint)" }}>SYS_UI // 60FPS</span>
+    <section className="features-section">
+      <div className="feat-bg-orbs"></div>
+      
+      <div className="reveal feat-header">
+        <h2>Why Choose HackXplore</h2>
+        <p>We simplify your journey to find and participate in hackathons and internships that match your skills and interests.</p>
       </div>
 
-      <div
-        className="reveal"
-        style={{
-          maxWidth: "95vw", margin: "0 auto",
-          border: "1px solid var(--border)", borderBottom: "none",
-          background: "var(--surface)", borderRadius: "12px 12px 0 0",
-          overflow: "hidden",
-          boxShadow: "0 -20px 50px rgba(176,38,255,.03)",
-        }}
-      >
-        {/* Window chrome */}
-        <div
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: ".75rem 1rem", borderBottom: "1px solid var(--border)",
-            background: "var(--bg)",
-          }}
-        >
-          <div style={{ display: "flex", gap: ".5rem" }}>
-            {[0, 1, 2].map((i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--border)" }} />)}
+      <div className="reveal feat-grid">
+        {features.map((feat, idx) => (
+          <div key={idx} className="feat-card">
+            <div className="feat-icon-wrap">{feat.icon}</div>
+            <h3>{feat.title}</h3>
+            <p>{feat.desc}</p>
           </div>
-          <div
-            className="mono"
-            style={{
-              fontSize: ".6875rem", color: "var(--muted)",
-              display: "flex", alignItems: "center", gap: ".5rem",
-              background: "var(--surface)", padding: ".25rem .875rem",
-              borderRadius: 4, border: "1px solid var(--border)",
-            }}
-          >
-            🔒 HackXplore.core / command-center
-          </div>
-          <div style={{ width: 48 }} />
-        </div>
-
-        {/* Dashboard body */}
-        <div style={{ display: "grid", gridTemplateColumns: "14rem 1fr 20rem", height: "35rem" }}>
-          {/* Sidebar */}
-          <div style={{ borderRight: "1px solid var(--border)", background: "var(--bg)", padding: "1rem" }}>
-            <div className="mono" style={{ fontSize: ".75rem", color: "var(--text)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: ".5rem" }}>📊 Overview</div>
-            {[
-              { icon: "🏆", label: "Hackathons", active: false },
-              { icon: "💼", label: "Internships", active: true },
-              { icon: "🎓", label: "Scholarships", active: false },
-              { icon: "📈", label: "Analytics", active: false },
-            ].map(({ icon, label, active }) => (
-              <div
-                key={label}
-                className="mono"
-                style={{
-                  fontSize: ".75rem", display: "flex", alignItems: "center", gap: ".625rem",
-                  padding: ".5rem .75rem", marginBottom: ".375rem", borderRadius: 4, cursor: "pointer",
-                  color: active ? "var(--accent)" : "var(--dim)",
-                  background: active ? "rgba(176,38,255,.1)" : "transparent",
-                  transition: "all .2s",
-                }}
-              >
-                {icon} {label}
-              </div>
-            ))}
-          </div>
-
-          {/* Chart area */}
-          <div className="dash-grid" style={{ padding: "1.5rem", background: "var(--bg)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, color: "var(--text)", letterSpacing: "-.02em" }}>Platform Activity</h3>
-                <p className="mono" style={{ fontSize: ".6875rem", color: "var(--dim)", marginTop: ".25rem" }}>Applications submitted — real time</p>
-              </div>
-              <div style={{ display: "flex", gap: ".375rem" }}>
-                {["1H", "24H", "7D"].map((t, i) => (
-                  <span key={t} className="mono" style={{
-                    fontSize: ".625rem", padding: ".25rem .625rem", borderRadius: 4,
-                    background: i === 0 ? "var(--border)" : "transparent",
-                    border: i === 0 ? "none" : "1px solid var(--border)",
-                    color: i === 0 ? "var(--text)" : "var(--dim)", cursor: "pointer",
-                  }}>{t}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Bar chart */}
-            <div
-              style={{
-                height: "12rem", borderBottom: "1px solid var(--border)", borderLeft: "1px solid var(--border)",
-                display: "flex", alignItems: "flex-end", justifyContent: "space-between",
-                padding: "0 .5rem .25rem", marginBottom: "1.5rem", gap: ".25rem",
-              }}
-            >
-              {bars.map((h, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: 1, borderRadius: "2px 2px 0 0", height: `${h}%`,
-                    background: i === 10 ? "var(--accent)" : i === 5 ? "rgba(176,38,255,.6)" : "var(--border)",
-                    boxShadow: i === 10 ? "0 0 15px rgba(176,38,255,.3)" : "none",
-                    transition: "background .2s", cursor: "pointer",
-                  }}
-                  onMouseOver={(e) => { if (i !== 10 && i !== 5) e.currentTarget.style.background = "rgba(176,38,255,.4)"; }}
-                  onMouseOut={(e) => { if (i !== 10 && i !== 5) e.currentTarget.style.background = "var(--border)"; }}
-                />
-              ))}
-            </div>
-
-            {/* Mini stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1rem" }}>
-              {[
-                { label: "Applications Today", value: "8,412" },
-                { label: "New Listings", value: "142" },
-                { label: "Avg. Response Time", value: "0.3s", accent: true },
-              ].map(({ label, value, accent }) => (
-                <div key={label} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: ".75rem", borderRadius: 6 }}>
-                  <div className="mono" style={{ fontSize: ".5625rem", color: "var(--dim)", marginBottom: ".375rem" }}>{label}</div>
-                  <div style={{ fontSize: "1.125rem", fontWeight: 600, color: accent ? "var(--accent)" : "var(--text)" }}>{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Live feed */}
-          <div style={{ borderLeft: "1px solid var(--border)", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
-            <div className="mono" style={{ padding: "1rem", borderBottom: "1px solid var(--border)", fontSize: ".75rem", color: "var(--text)" }}>
-              🟢 Live Platform Feed
-            </div>
-            <DashFeed />
-          </div>
-        </div>
+        ))}
       </div>
     </section>
   );
@@ -698,7 +645,7 @@ export default function App() {
 
         <main style={{ paddingTop: "6rem" }}>
           <Hero />
-          <MetricsSection />
+          <FeaturesSection />
           <HackathonsSection />
           <InternshipsSection />
           <ScholarshipsSection />

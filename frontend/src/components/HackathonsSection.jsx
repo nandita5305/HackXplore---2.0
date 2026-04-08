@@ -25,12 +25,16 @@ const SECTION_CSS = `
     padding: 1.25rem;
     clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 0 100%);
   }
+  
+  /* ── UPDATED GRID WIDTH ── */
   .hack-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
   }
+  
   .hack-load-more { text-align: center; margin-top: 2.5rem; }
+  
   @media (max-width: 900px) {
     .hack-stats-bar { grid-template-columns: repeat(2, 1fr); }
   }
@@ -73,7 +77,7 @@ const inferOrganizer = (url = "") => {
 };
 
 export default function HackathonsSection({
-  maxItems = 10,
+  maxItems = 3, // Changed default to 3 items
   showViewMore = true,
   onViewMore,
   isFullPage = false,
@@ -83,7 +87,7 @@ export default function HackathonsSection({
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [localFullPage, setLocalFullPage] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(maxItems);
 
   useEffect(() => {
     let alive = true;
@@ -141,6 +145,14 @@ export default function HackathonsSection({
     };
   }, []);
 
+  const [filters, setFilters] = useState({
+  mode: [],
+  difficulty: [],
+  prize: [],
+  domain: [],
+});
+
+
   const filtered = useMemo(() => hackathons.filter((h) => {
     if (activeFilter === "All")      return true;
     if (activeFilter === "Online")   return h.mode === "online";
@@ -162,52 +174,50 @@ export default function HackathonsSection({
     () => filtered.reduce((acc, h) => acc + (Number(h.registered) || 0), 0),
     [filtered]
   );
-  const fullMode = isFullPage || localFullPage;
-  const visibleHackathons = useMemo(
-    () => (fullMode ? filtered : (typeof maxItems === "number" ? filtered.slice(0, maxItems) : filtered)),
-    [filtered, maxItems, fullMode]
-  );
-  const hasMore = !fullMode && typeof maxItems === "number" && filtered.length > maxItems;
+  
+  // const fullMode = isFullPage || localFullPage;
+const visibleHackathons = useMemo(
+  () => filtered.slice(0, visibleCount),
+  [filtered, visibleCount]
+);
+  const hasMore = visibleCount < filtered.length;
 
-  const handleViewMore = () => {
-    if (onViewMore) {
-      onViewMore();
-      return;
-    }
-    setLocalFullPage(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // const handleViewMore = () => {
+  //   if (onViewMore) {
+  //     onViewMore();
+  //     return;
+  //   }
+  //   // Redirect to the /hackathon page
+  //   window.location.href = "/hackathon";
+  // };
+ const handleViewMore = () => {
+  setVisibleCount(prev => prev + 3);
+};
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-      return;
-    }
-    setLocalFullPage(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // const handleBack = () => {
+  //   if (onBack) {
+  //     onBack();
+  //     return;
+  //   }
+  //   setLocalFullPage(false);
+  //   window.scrollTo({ top: 0, behavior: "smooth" });
+  // };
 
   return (
     <>
       <style>{SECTION_CSS}</style>
 
-      <section id={fullMode ? "all-hackathons" : "hackathons"} className="hack-section">
+      <section id="hackathons">
         <div className="hack-section-inner">
           <div className="sec-label">Phase_01 // Hackathons</div>
 
           <div className="hack-header">
             <div>
-              {fullMode && (
-                <button className="btn-ghost" style={{ marginBottom: ".85rem" }} onClick={handleBack}>
-                  Back to Home
-                </button>
-              )}
-              <h2 className="hack-h2">{fullMode ? "All Hackathons" : "Compete. Build. Win."}</h2>
-              <p className="hack-sub">
-                {fullMode
-                  ? "Browse the complete hackathon dataset."
-                  : "Live hackathons from your scraped dataset. Filter by mode and level."}
-              </p>
+              <h2 className="hack-h2">Compete. Build. Win.</h2>
+<p className="hack-sub">
+  Live hackathons from your scraped dataset. Filter by mode and level.
+</p>
+
             </div>
             <div className="hack-filters">
               {FILTERS.map((f) => (
@@ -265,13 +275,13 @@ export default function HackathonsSection({
           </div>
 
           <div className="hack-load-more">
-            {showViewMore && hasMore ? (
-              <button className="btn-ghost" onClick={handleViewMore}>
-                View More Hackathons {'->'}
-              </button>
-            ) : (
-              <button className="btn-ghost">Loaded from JSON dataset</button>
-            )}
+           {showViewMore && hasMore ? (
+  <button className="btn-ghost" onClick={handleViewMore}>
+    View More Hackathons {'->'}
+  </button>
+) : (
+  <button className="btn-ghost">Loaded from JSON dataset</button>
+)}
           </div>
         </div>
       </section>
